@@ -20,20 +20,34 @@
         $this->abilityCooldown = $abilityCooldown;
     }
  }
+
+ class Map
+ {
+     public $coords;
+
+     public function __construct()
+     {
+         $this->coords = array();
+     }
+
+     public function updateCoord($x, $y, $status ="U"){
+         $this->coords[$x . '-' . $y] = $status;
+     }
+ }
+ 
  
 /**
  * Grab the pellets as fast as you can!
  **/
 
 $pacs = array();
-$map = array();
+$map = new Map();
 fscanf(STDIN, "%d %d", $width, $height); // $width: size of the grid
 for ($i = 0; $i < $height; $i++) { // $height: top left corner is (x=0, y=0)
     $row = str_split(stream_get_line(STDIN, $width + 1, "\n")); // one line of the grid: space " " is floor, pound "#" is wall
     foreach ($row as $index => $cell) {
         if ($cell == " ") {
-            $coord = $index . '-' . $i;
-            $map[$coord] = "U";
+            $map->updateCoord($index, $i);
         }
     }
 }
@@ -50,13 +64,13 @@ while (TRUE) {
         $player = $mine ? '1' : '2';
         $pacs[$pacId.'-'.$player] = new Pac($pacId, $mine, $x, $y, $typeId, $speedTurnsLeft, $abilityCooldown);
     }
-        error_log(print_r($pacs,true));
+
     fscanf(STDIN, "%d", $visiblePelletCount);
     $superPellets = array();
     for ($i = 0; $i < $visiblePelletCount; $i++) {
         fscanf(STDIN, "%d %d %d", $x, $y, $value);
-        $pelletCoord = $x . '-' . $y;
-        $map[$pelletCoord] = $value == 1 ? "p" : "P";
+        $status= $value == 1 ? "p" : "P";
+        $map->updateCoord($x,$y,$status);
         if ($value == 10) {
             $superPellets[] = [$x,$y];
         }
@@ -65,9 +79,9 @@ while (TRUE) {
     $moves = "";
     foreach ($pacs as $pac) {
         $pacCoords = $pac->x.'-'.$pac->y;
-        $map[$pacCoords] = "V";
+        $map->updateCoord($pac->x, $pac->y,"V");
         if ($pac->mine == true) {
-            $potentialPellet = array_search('p',$map);
+            $potentialPellet = array_search('p',$map->coords);
             if (!empty($superPellets)) {
                 $selectedSuperPellet = array_shift($superPellets);
                 $xDest = $selectedSuperPellet[0];
@@ -79,7 +93,7 @@ while (TRUE) {
               $yDest = $coords[1];
               error_log('pac'.$pac->pacId.":"."pot".$xDest."-".$yDest);
             }else{
-                $potentialPellet = array_rand($map);
+                $potentialPellet = array_rand($map->coords);
                 $coords = explode('-',$potentialPellet);
                 $xDest = $coords[0];
                 $yDest = $coords[1];
